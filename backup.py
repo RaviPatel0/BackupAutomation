@@ -656,8 +656,9 @@ try:
         options = {'server': JIRA_SERVER}
         jira = JIRA(options=options, basic_auth=(EMAIL_ID, JIRA_TOKEN))
         issue = jira.issue(JIRA_ID)
+        remove_lable=['auto_precheck_general','auto_precheck_review','auto_precheck_failed','auto_precheck_complete','auto_precheck_in_progress']
+        issue.fields.labels=[issue.fields.labels[i] for i in range(len(issue.fields.labels)) if issue.fields.labels[i] not in remove_lable]
         issue.fields.labels.append(u'auto_precheck_general')
-        # issue.fields.labels.append(u'Temp')
         issue.update(fields={"labels": issue.fields.labels})
         jira.add_comment(issue, JIRA_CMT_STR)
         jira.add_comment(issue, JIRA_SCK_STR)
