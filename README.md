@@ -26,8 +26,8 @@ python3 backup.py -s fb -t shc1,c0m1 -j TO-123456
 
 You can choose either c0m1 or indexer.
 
-  If stack is Classic then choose only c0m1.
+         If stack is Classic then choose only c0m1.
 
-  If stack is NOAH then choose only indexer.
+         If stack is NOAH then choose only indexer.
 
 
