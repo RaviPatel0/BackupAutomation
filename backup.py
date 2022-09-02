@@ -402,13 +402,16 @@ try:
     PASS= PASS.split("\n")[0]
     JIRA_SCK_STR = "h2. Sanity Check:\n"
     
+    sanity_pointer_shc = 0
+    sanity_pointer_search = 0
+    
     while(choice!='3'):
         for i in instance_dict.keys():
             for j in BACKUP_NODESS:
                 if j.startswith('shc') & (i==j):
                     flag = 0
                     for x in instance_dict[i]:
-                        if flag == 0:
+                        if flag == 0 and sanity_pointer_shc == 0:
                             subprocess.call(['sh', './test.sh',x,PASS])
                             JIRA_SCK_STR+="SHCluster Status :\n"
                             JIRA_SCK_STR+="splunk@"+x+":~$ splunk show shcluster-status\n"
@@ -418,21 +421,23 @@ try:
                                     JIRA_SCK_STR+=line
                             JIRA_SCK_STR+="{code}"
                             flag = 1
-                        subprocess.call(['sh', './test1.sh',x,PASS])
-                        check_err="ERROR:"
-                        JIRA_SCK_STR+="Lookup Error Check on :"+x+"\n"
-                        lookup_flag = 0
-                        temp = ""
-                        with open('out.txt', 'r') as f:
-                            for line in f:
-                                if re.search(check_err, line):
-                                    lookup_flag = 1
-                                    temp+=line
-                        if lookup_flag == 1:  
-                            JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
-                            JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
-                        else:
-                            JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
+                            sanity_pointer_shc = 1
+                        if sanity_pointer_search == 0:
+                            subprocess.call(['sh', './test1.sh',x,PASS])
+                            check_err="ERROR:"
+                            JIRA_SCK_STR+="Lookup Error Check on :"+x+"\n"
+                            lookup_flag = 0
+                            temp = ""
+                            with open('out.txt', 'r') as f:
+                                for line in f:
+                                    if re.search(check_err, line):
+                                        lookup_flag = 1
+                                        temp+=line
+                            if lookup_flag == 1:  
+                                JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
+                                JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
+                            else:
+                                JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
                         if choice == '1':
                             cmd =  "sft ssh "+ x + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
                             op= os.popen(cmd).read()
@@ -474,7 +479,7 @@ try:
                             JIRA_CMT_STR+="*on "+x+"*\n"
                             for k in package:
                                 JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
+                                cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
                                 op= os.popen(cmd).read()
                                 JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
                                 JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
@@ -508,9 +513,10 @@ try:
                                 JIRA_CMT_STR+=DATE
                                 JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ \n"
                                 JIRA_CMT_STR+="{code}\n"
+                    
                 elif(i==j):
                     node_fqdn = str(instance_dict[j]).split('.')[0]
-                    if i != "indexer":
+                    if i != "indexer" and sanity_pointer_search == 0:
                         subprocess.call(['sh', './test1.sh',node_fqdn,PASS])
                         check_err="ERROR:"
                         JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+"*\n"
@@ -570,7 +576,7 @@ try:
                             JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
                             for k in package:
                                 JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
+                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
                                 op= os.popen(cmd).read()
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
@@ -610,7 +616,7 @@ try:
                             JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
                             for k in package:
                                 JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
+                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
                                 op= os.popen(cmd).read()
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
@@ -644,8 +650,8 @@ try:
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$ date\n"
                                 JIRA_CMT_STR+=DATE
                                 JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$ \n"
-                                JIRA_CMT_STR+="{code}\n"
-
+                                JIRA_CMT_STR+="{code}\n"                        
+        sanity_pointer_search = 1
         choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. Exit \n")
         if choice == '2':
             package = input("Enter Package ID : ").split(',')
