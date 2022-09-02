@@ -46,7 +46,6 @@ package=[]
 AD_USER = getuser()
 SHELL_PATH = os.environ['PATH']
 HOME_PATH = os.environ['HOME']
-# print("Take backup:\n1. Using EBTOOL\n2. Package ID\n")
 choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific\n3. Exit \n")
 if choice == '2':
             package = input("Enter Package ID : ").split(',')
@@ -413,9 +412,9 @@ try:
                     for x in instance_dict[i]:
                         if flag == 0 and sanity_pointer_shc == 0:
                             subprocess.call(['sh', './test.sh',x,PASS])
-                            JIRA_SCK_STR+="SHCluster Status :\n"
-                            JIRA_SCK_STR+="splunk@"+x+":~$ splunk show shcluster-status\n"
+                            JIRA_SCK_STR+="*SHCluster Status :*\n"
                             JIRA_SCK_STR+="{code:java}"
+                            JIRA_SCK_STR+="splunk@"+x+":~$ splunk show shcluster-status\n"
                             with open('out.txt', 'r') as f:
                                 for line in f:
                                     JIRA_SCK_STR+=line
@@ -425,7 +424,7 @@ try:
                         if sanity_pointer_search == 0:
                             subprocess.call(['sh', './test1.sh',x,PASS])
                             check_err="ERROR:"
-                            JIRA_SCK_STR+="Lookup Error Check on :"+x+"\n"
+                            JIRA_SCK_STR+="*Lookup Error Check on :"+x+" ("+j+")*\n"
                             lookup_flag = 0
                             temp = ""
                             with open('out.txt', 'r') as f:
@@ -519,7 +518,7 @@ try:
                     if i != "indexer" and sanity_pointer_search == 0:
                         subprocess.call(['sh', './test1.sh',node_fqdn,PASS])
                         check_err="ERROR:"
-                        JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+"*\n"
+                        JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+" ("+j+")*\n"
                         lookup_flag = 0
                         temp = ""
                         with open('out.txt', 'r') as f:
