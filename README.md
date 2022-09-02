@@ -11,17 +11,18 @@
 
 **2. Go to the BackupAutomation directory**
 
-**3. Give execution permission to test.sh and test1.sh files
+
+**3. Give execution permission to test.sh and test1.sh files**
 
     chmod +x test.sh
     chmod +x test1.sh
     
-**3. Run python script**
+**4. Run python script**
 
     python3 backup.py -s <STACK-NAME> -t <TARGETS (Example: sh1,c0m1,idm1,indexer,shc1) > -j <JIRA ID>
 
   
-**4 Example**
+**5 Example**
   
     python3 backup.py -s fb -t shc1,c0m1 -j TO-123456
 
