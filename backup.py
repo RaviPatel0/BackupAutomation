@@ -388,10 +388,14 @@ try:
             BACKUP_NODESS.append(BACKUP_NODES)
     print(instance_dict)
 
+    if 'c0m1' in BACKUP_NODESS and 'indexer' in BACKUP_NODESS:
+        print("\nYou chose c0m1 and indexer both target. If stack is Classic then choose only c0m1. If stack is NOAH then choose only indexer.")
+        exit()
+    if 'indexer' in BACKUP_NODESS:
+        print("Please make sure that stack is Noah")
     if 'c0m1' in BACKUP_NODESS:
-        if 'indexer' in BACKUP_NODESS:
-            print("\nYou chose c0m1 and indexer both target.If stack is Classic then choose only c0m1.If stack is NOAH then choose only indexer.")
-            quit()
+        print("Please make sure that stack is Classic")
+
     JIRA_CMT_STR = "h2. Took backup:\n"
     get_pass="vault kv get cloud-sec/std/lve/stacks/"+STACK+"/admin | grep plaintext | awk {'print $2'}"
     PASS = os.popen(get_pass).read()
@@ -506,29 +510,31 @@ try:
                                 JIRA_CMT_STR+="{code}\n"
                 elif(i==j):
                     node_fqdn = str(instance_dict[j]).split('.')[0]
-                    subprocess.call(['sh', './test1.sh',node_fqdn,PASS])
-                    check_err="ERROR:"
-                    JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+"*\n"
-                    lookup_flag = 0
-                    temp = ""
-                    with open('out.txt', 'r') as f:
-                        for line in f:
-                            if re.search(check_err, line):
-                                lookup_flag = 1
-                                temp+=line
-                    if lookup_flag == 1:  
-                        JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
-                        JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
-                    else:
-                        JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
+                    if i != "indexer":
+                        subprocess.call(['sh', './test1.sh',node_fqdn,PASS])
+                        check_err="ERROR:"
+                        JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+"*\n"
+                        lookup_flag = 0
+                        temp = ""
+                        with open('out.txt', 'r') as f:
+                            for line in f:
+                                if re.search(check_err, line):
+                                    lookup_flag = 1
+                                    temp+=line
+                        if lookup_flag == 1:  
+                            JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
+                            JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
+                        else:
+                            JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
                     if choice == '1':
-                        cmd =  "sft ssh "+ node_fqdn + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
-                        op= os.popen(cmd).read()
-                        disk_space=(op.split()[-2]).split("%")[0]
-                        if int(disk_space) > 75:
-                            JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
-                            JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
-                            continue
+                        if i != "indexer":
+                            cmd =  "sft ssh "+ node_fqdn + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
+                            op= os.popen(cmd).read()
+                            disk_space=(op.split()[-2]).split("%")[0]
+                            if int(disk_space) > 75:
+                                JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
+                                JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
+                                continue
                         JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
                         JIRA_CMT_STR+="{code:java}\n"
                         # cmd="this is a test text"
