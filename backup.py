@@ -8,22 +8,17 @@
 import argparse
 from datetime import date
 import http
-import json
 import os
 import sys
-import time
-import subprocess
 from unicodedata import name
-import uuid
 import warnings
 from getpass import getpass, getuser
-from urllib.parse import parse_qs, urlparse
-import jwt
 import requests
-import re
 from pathlib import Path
 from bs4 import BeautifulSoup
 from jira.client import JIRA
+from shared.preq import co2_login,check_vault_login
+from shared.checks import check_disk_space, cm_app_specfic_backup, eb_tool_backup, indexer_searchability, kvstore_backup, kvstore_status, sh_app_specfic_backup, shcluster_status,query_yes_no
 
 warnings.filterwarnings(action="ignore", category=ResourceWarning)
 warnings.filterwarnings(action='ignore', message='Unverified HTTPS request')
@@ -46,9 +41,20 @@ package=[]
 AD_USER = getuser()
 SHELL_PATH = os.environ['PATH']
 HOME_PATH = os.environ['HOME']
-choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific\n3. Exit \n")
+
+choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
+
 if choice == '2':
             package = input("Enter Package ID : ").split(',')
+if choice == '3':
+    if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
+        kv_node = input("Enter KV Store Backup node :")
+        backup_type = "full"
+    else:
+        package = input("Enter Package ID for app-specific KVStore Backup : ").split(',')
+        kv_node = input("Enter KV Store Backup node : ")
+        backup_type = "app"
+
 print("Your username is " + AD_USER)
 
 
@@ -116,163 +122,10 @@ except Exception as e:
     
 print("CO2 Configuration:\n" + setEnv + "##########")
 
-def co2_check_token():
-    token_file = HOME_PATH + '/.cloudctl/token_' + CO2_ENV
-    try:
-        if os.path.exists(token_file):
-            if os.path.getsize(token_file) > 0:
-                with open(token_file, 'r') as content_file:
-                    token = content_file.read()
-                decodedToken = jwt.decode(
-                    token, options={"verify_signature": False})
-                jsonToken = json.dumps(decodedToken)
-                tokenExpireTime = json.loads(jsonToken)["exp"]
-                currentTime = int(time.strftime("%s"))
-                difference = tokenExpireTime - currentTime
-                if difference > 60:
-                    return True
-
-    except Exception as e:
-        print(e)
-
-    return False
-
-
-
-def co2_login():
-    while co2_check_token() is not True:
-        token_file = HOME_PATH + '/.cloudctl/token_' + CO2_ENV 
-        print("SplunkCloud: Logging into CO2")
-
-        try:
-            header = {'Accept': 'application/json',
-                      'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
-            login_url = "https://splunkcloud.okta.com/api/v1/authn"
-            login_payload = {'username': AD_USER, 'password': AD_PASSWORD}
-
-            login_response = requests.post(
-                login_url, headers=header, json=login_payload)
-
-            if login_response.status_code != 200:
-                raise Exception()
-
-            login_response_json = json.loads(login_response.text)
-            stateToken = str(login_response_json['stateToken'])
-            push_verification_link = str(
-                login_response_json['_embedded']['factors'][0]['_links']['verify']['href'])
-
-            push_url = push_verification_link
-            push_payload = {'stateToken': stateToken}
-            push_response_json = ''
-
-            while True:
-                push_response = requests.post(
-                    push_url, headers=header, json=push_payload)
-
-                if push_response.status_code != 200:
-                    raise Exception()
-
-                push_response_json = json.loads(push_response.text)
-                auth_status = str(push_response_json['status'])
-
-                if auth_status == "SUCCESS":
-                    break
-
-                time.sleep(0.5)
-
-            session_token = str(push_response_json['sessionToken'])
-
-            with open(HOME_PATH + "/.cloudctl/config.yaml", 'r') as cloudctl_config:
-                configs = cloudctl_config.readlines()
-
-            for config in configs:
-
-                if "idpclientid" in config:
-                    client_id = config.split(": ")[1].rstrip('\n')
-
-                if "idpserverid" in config:
-                    server_id = config.split(": ")[1].rstrip('\n')
-
-            access_token_url = "https://splunkcloud.okta.com/oauth2/" + server_id + "/v1/authorize?client_id=" + client_id + "&nonce=" + str(uuid.uuid4()) + \
-                "&prompt=none&redirect_uri=https%3A%2F%2Fdoes.not.resolve%2F&response_type=token&scope=&sessionToken=" + \
-                session_token + "&state=not.used"
-            access_token_response = requests.get(
-                access_token_url, allow_redirects=False)
-
-            if access_token_response.status_code != 302:
-                raise Exception()
-
-            parsed_access_token_header = urlparse(
-                access_token_response.headers['location'])
-            access_token = parse_qs(parsed_access_token_header.fragment)[
-                'access_token'][0]
-
-            with open(token_file, 'w') as token_f:
-                token_f.write(access_token)
-
-        except Exception as e:
-            print("\nSplunkCloud: Failed to log into CO2\n" + e)
-
-def get_vault_token():
-    """
-    Function to get the vault API token
-    """
-    # will store token as global variable to reuse for all calls to vault
-    global VAULT_TOKEN
-    # URL to hit the vault auth okta endpoint
-    url = VAULT_ADDR + '/v1/auth/okta/login/' + AD_USER
-    payload = '{"password": "' + OKTA_PASSWORD + '"}'
-
-    try:
-        print("Vault: Sending 2FA prompt to your phone now...")
-        vault_token_json = requests.post(url, data=payload)
-        print("Vault: Verification received. Checking Status")
-
-        if vault_token_json.status_code != 200:
-            raise Exception(
-                'Failed to get Vault Token. Check for your password and try again.')
-
-    except Exception as e:
-        print(e)
-        print(' ...Exiting... ')
-        quit()
-
-    vault_token_json = json.loads(vault_token_json.text)
-    VAULT_TOKEN = str(vault_token_json['auth']['client_token'])
-    with open("/Users/" + AD_USER + "/.vault-token", "w") as fvault:
-        fvault.write(VAULT_TOKEN)
-
-    print("Vault: Authenticated!\n##########")
-
-def check_vault_login():
-    now = time.time()
-    current = Path.home()
-    token_path = current.joinpath(".vault-token")
-    print(token_path)
-    try:
-        mod_time = os.stat(token_path).st_mtime
-        file_size = os.stat(token_path).st_size
-    except Exception as e:
-        print("unable to get token time and size.", e)
-        mod_time = 0
-        file_size = 0
-    file_age = now - mod_time
-    if file_size != 0 and file_age < 28800:
-        global VAULT_TOKEN
-        f = open(str(token_path), "r")
-        VAULT_TOKEN = f.read()
-        f.close()
-        print("Vault: Already Authenticated!\n##########")
-    else:
-        try:
-            print("Vault login")
-            get_vault_token()
-        except Exception as e:
-            raise RuntimeError(f'Unable to logged in into "Vault" ({e})')
 
 try:
-    check_vault_login()
-    co2_login()
+    check_vault_login(VAULT_ADDR,OKTA_PASSWORD)
+    co2_login(AD_PASSWORD)
 
 except Exception as e:
     print(e)
@@ -303,26 +156,6 @@ else:
     print("Failed to get Splunkbase Token... Check AD_PASSWORD")
     quit()
 
-def query_yes_no(question, default="no"):
-    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = input().lower()
-        if default is not None and choice == '':
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            sys.stdout.write(
-                "Please respond with 'yes' or 'no' (or 'y' or 'n').\n")
 
 def patch_http_response_read(func):
     def inner(*args):
@@ -396,265 +229,112 @@ try:
         print("Please make sure that stack is Classic")
 
     JIRA_CMT_STR = "h2. Took backup:\n"
-    get_pass="vault kv get cloud-sec/std/lve/stacks/"+STACK+"/admin | grep plaintext | awk {'print $2'}"
-    PASS = os.popen(get_pass).read()
-    PASS= PASS.split("\n")[0]
+    JIRA_KV_STR = ""
+    # get_pass="vault kv get cloud-sec/std/lve/stacks/"+STACK+"/admin | grep plaintext | awk {'print $2'}"
+    # PASS = os.popen(get_pass).read()
+    # PASS= PASS.split("\n")[0]
+    # PASS="^^CgeLaJ%3Xihxsg5F_5#7q_iM8__i&Rjd40skh&3290l^fw_^tO5892w_f3_&GI" # fb
+    # PASS="pKsa_522%r15%mu5%n#6&xy#71Ubg7tOC9I^9z_i9^JsM#b^sbL6_%6Ql_z#P4gg" #bpg
+    PASS="7u_#I_i8rt61Q6w&okA9o0tam#U#&8S6k^^4Fs#BOxP51&^&r#Rr5_r5mmml50v#" #to-115679-test
     JIRA_SCK_STR = "h2. Sanity Check:\n"
     
     sanity_pointer_shc = 0
     sanity_pointer_search = 0
+    sanity_pointer_kv = 0
     
-    while(choice!='3'):
+    while(choice!='4'):
         for i in instance_dict.keys():
             for j in BACKUP_NODESS:
+                check_kv_status = "failed"
+                kv_captain = "test"
                 if j.startswith('shc') & (i==j):
                     flag = 0
                     for x in instance_dict[i]:
                         if flag == 0 and sanity_pointer_shc == 0:
-                            subprocess.call(['sh', './test.sh',x,PASS])
-                            JIRA_SCK_STR+="*SHCluster Status :*\n"
-                            JIRA_SCK_STR+="{code:java}"
-                            JIRA_SCK_STR+="splunk@"+x+":~$ splunk show shcluster-status\n"
-                            with open('out.txt', 'r') as f:
-                                for line in f:
-                                    JIRA_SCK_STR+=line
-                            JIRA_SCK_STR+="{code}"
+                            # SHCluster Status
+                            JIRA_SCK_STR=shcluster_status(JIRA_SCK_STR,x,PASS)                        
                             flag = 1
                             sanity_pointer_shc = 1
+
+                        # KV Store Status
+                        if choice == '3' and kv_node == "shc1" and sanity_pointer_kv == 0:
+                            JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,x,PASS,"yes")
+                            JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,kv_captain,PASS,"yes")
+                            sanity_pointer_kv = 1
+                        
+                        # Indexer Searchability
                         if sanity_pointer_search == 0:
-                            subprocess.call(['sh', './test1.sh',x,PASS])
-                            check_err="ERROR:"
-                            JIRA_SCK_STR+="*Lookup Error Check on :"+x+" ("+j+")*\n"
-                            lookup_flag = 0
-                            temp = ""
-                            with open('out.txt', 'r') as f:
-                                for line in f:
-                                    if re.search(check_err, line):
-                                        lookup_flag = 1
-                                        temp+=line
-                            if lookup_flag == 1:  
-                                JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
-                                JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
-                            else:
-                                JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
+                            JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,x,PASS,j)
+
+                        # EB Tool Backup
                         if choice == '1':
-                            cmd =  "sft ssh "+ x + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
-                            op= os.popen(cmd).read()
-                            disk_space=(op.split()[-2]).split("%")[0]
+                            disk_space=check_disk_space(x)
                             if int(disk_space) > 75:
                                 JIRA_CMT_STR+="*on "+x+"*\n"
                                 JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
                                 continue
-                            JIRA_CMT_STR+="*on "+x+"*\n"
-                            JIRA_CMT_STR+="{code:java}\n"
-                            cmd =  "sft ssh " + x + " --command 'sudo su  - splunk -c \"PYTHONPATH="" LD_LIBRARY_PATH="" >/dev/null; local-backup-splunketc backup;\"'"
-                            # subprocess.call(cmd, shell=True)
-                            op= os.popen(cmd).read()
-                            JIRA_CMT_STR+="splunk@"+x+":~$  local-backup-splunketc backup\n"
-                            # JIRA_CMT_STR+=op
-                            # print(op)
+                            JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,x)
 
-                            with open('tempf.txt', 'w') as f:
-                                print(op, file=f)
-                                
-                            with open("tempf.txt","r") as file_one:
-
-                                patrn = "Tab-completion"
-                                patrn1="closed"
-                                patrn2="Required space constraint not met"
-                                for line in file_one:
-
-                                    if re.search(patrn, line):
-                                        pass
-                                    elif re.search(patrn1, line):
-                                        pass
-                                    elif re.search(patrn2, line):
-                                        JIRA_CMT_STR+="Required space constraint not met"
-                                    else:
-                                        JIRA_CMT_STR+=line
-                            JIRA_CMT_STR+="splunk@"+x+":~$ \n"
-                            JIRA_CMT_STR+="{code}\n"
+                        # App Specific Backup
                         if choice == '2':
-                            JIRA_CMT_STR+="*on "+x+"*\n"
-                            for k in package:
-                                JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
-                                op= os.popen(cmd).read()
-                                JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-                                JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package)
+                            
+                        # KV Store Backup
+                        if choice == '3' and check_kv_status == "ready" and x == kv_captain:
+                            JIRA_KV_STR=kvstore_backup(JIRA_KV_STR,kv_captain,PASS,JIRA_ID,package,backup_type)  
+                            print("Please Check KV Strore status before start Maintenance Window")
 
-                                with open('tempf.txt', 'w') as f:
-                                    print(op, file=f)
-
-                                with open("tempf.txt","r") as file_one:
-
-                                    patrn = "Tab-completion"
-                                    patrn4 = "closed"
-                                    patrn1="No such file or directory"
-                                    patrn3="mkdir: cannot create directory"
-                                    patrn5="UTC"
-                                    for line in file_one:
-
-                                        if re.search(patrn, line):
-                                            pass
-                                        elif re.search(patrn3, line):
-                                            pass
-                                        elif re.search(patrn4, line):
-                                            pass
-                                        elif re.search(patrn5, line):
-                                            DATE = line
-                                        elif re.search(patrn1, line):
-                                            JIRA_CMT_STR+="\n----------------------->    Package not found - ("+str(k)+")    <-----------------------\n\n"
-                                            break
-                                        else:
-                                            JIRA_CMT_STR+=line
-                                JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ date\n"
-                                JIRA_CMT_STR+=DATE
-                                JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ \n"
-                                JIRA_CMT_STR+="{code}\n"
-                    
                 elif(i==j):
                     node_fqdn = str(instance_dict[j]).split('.')[0]
                     if i != "indexer" and sanity_pointer_search == 0:
-                        subprocess.call(['sh', './test1.sh',node_fqdn,PASS])
-                        check_err="ERROR:"
-                        JIRA_SCK_STR+="*Lookup Error Check on :"+node_fqdn+" ("+j+")*\n"
-                        lookup_flag = 0
-                        temp = ""
-                        with open('out.txt', 'r') as f:
-                            for line in f:
-                                if re.search(check_err, line):
-                                    lookup_flag = 1
-                                    temp+=line
-                        if lookup_flag == 1:  
-                            JIRA_SCK_STR+="*{color:#d04437}Below lookup errors are present{color}*\n\n"
-                            JIRA_SCK_STR+="{code:java}\n"+temp+"{code}"
-                        else:
-                            JIRA_SCK_STR+="{color:#14892c} No lookup error present {color} \n\n"
+                        # Checking Indexer Searchability ... 
+                        JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,node_fqdn,PASS,j)
+                        
+                    # KV Store Status
+                    if choice == '3' and kv_node != "shc1" and sanity_pointer_kv == 0:
+                        node_id = (instance_dict[kv_node]).split(".")[0]
+                        JIRA_SCK_STR,check_kv_status = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
+                        sanity_pointer_kv = 1
+                        
+                        
                     if choice == '1':
+                        # Checking Disk Space 
                         if i != "indexer":
-                            cmd =  "sft ssh "+ node_fqdn + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
-                            op= os.popen(cmd).read()
-                            disk_space=(op.split()[-2]).split("%")[0]
+                            disk_space=check_disk_space(node_fqdn)
                             if int(disk_space) > 75:
                                 JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
                                 JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
                                 continue
-                        JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
-                        JIRA_CMT_STR+="{code:java}\n"
-                        # cmd="this is a test text"
-                        cmd =  "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"PYTHONPATH="" LD_LIBRARY_PATH="" >/dev/null; local-backup-splunketc backup; date\"'"
-                        # subprocess.call(cmd, shell=True)
-                        op= os.popen(cmd).read()
-                        JIRA_CMT_STR+="splunk@"+node_fqdn+":~$  local-backup-splunketc backup\n"
-                        # JIRA_CMT_STR+=op
-                        # print(op)
 
-                        with open('tempf.txt', 'w') as f:
-                            print(op, file=f)
-
-                        with open("tempf.txt","r") as file_one:
-
-                            patrn = "Tab-completion"
-                            patrn1="closed"
-                            patrn2="Required space constraint not met"
-                            for line in file_one:
-
-                                if re.search(patrn, line):
-                                    pass
-                                elif re.search(patrn1, line):
-                                    pass
-                                elif re.search(patrn2, line):
-                                    JIRA_CMT_STR+="Required space constraint not met"
-                                else:
-                                    JIRA_CMT_STR+=line
-                        JIRA_CMT_STR+="splunk@"+node_fqdn+":~$ \n"
-                        JIRA_CMT_STR+="{code}\n"
+                        # Taking EBTool Backup
+                        JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,node_fqdn)
                     if choice =='2':
+                        # Taking App Specific Backup
                         if j.startswith('c0m1'):
-                            JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
-                            for k in package:
-                                JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
-                                op= os.popen(cmd).read()
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
-
-                                with open('tempf.txt', 'w') as f:
-                                    print(op, file=f)
-
-                                with open("tempf.txt","r") as file_one:
-
-                                    patrn = "Tab-completion"
-                                    patrn4 = "closed"
-                                    patrn1="No such file or directory"
-                                    patrn3="mkdir: cannot create directory"
-                                    patrn5="UTC"
-                                    for line in file_one:
-
-                                        if re.search(patrn, line):
-                                            pass
-                                        elif re.search(patrn3, line):
-                                            pass
-                                        elif re.search(patrn4, line):
-                                            pass
-                                        elif re.search(patrn5, line):
-                                            DATE = line
-                                        elif re.search(patrn1, line):
-                                            JIRA_CMT_STR+="\n----------------------->    Package not found - ("+str(k)+")    <-----------------------\n\n"
-                                            break
-                                        else:
-                                            JIRA_CMT_STR+=line
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ date\n"
-                                JIRA_CMT_STR+=DATE
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ \n"
-                                JIRA_CMT_STR+="{code}\n"
-        
-
+                            JIRA_CMT_STR=cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package)
                         else:
-                            JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
-                            for k in package:
-                                JIRA_CMT_STR+="{code:java}\n"
-                                cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
-                                op= os.popen(cmd).read()
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
-
-                                with open('tempf.txt', 'w') as f:
-                                    print(op, file=f)
-
-                                with open("tempf.txt","r") as file_one:
-
-                                    patrn = "Tab-completion"
-                                    patrn4 = "closed"
-                                    patrn1="No such file or directory"
-                                    patrn3="mkdir: cannot create directory"
-                                    patrn5="UTC"
-
-                                    for line in file_one:
-
-                                        if re.search(patrn, line):
-                                            pass
-                                        elif re.search(patrn3, line):
-                                            pass
-                                        elif re.search(patrn4, line):
-                                            pass
-                                        elif re.search(patrn5, line):
-                                            DATE = line
-                                        elif re.search(patrn1, line):
-                                            JIRA_CMT_STR+="\n----------------------->    Package not found - ("+str(k)+")    <-----------------------\n\n"
-                                            break
-                                        else:
-                                            JIRA_CMT_STR+=line
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$ date\n"
-                                JIRA_CMT_STR+=DATE
-                                JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/apps$ \n"
-                                JIRA_CMT_STR+="{code}\n"                        
+                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package)
+      
+                    # KV Store Backup
+                    if choice == '3' and check_kv_status == "ready" and (instance_dict[kv_node]).split(".")[0] == node_fqdn:
+                        JIRA_KV_STR=kvstore_backup(JIRA_KV_STR,node_fqdn,PASS,JIRA_ID,package,backup_type)  
+                        print("Please Check KV Strore status before start Maintenance Window")
+                      
         sanity_pointer_search = 1
-        choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. Exit \n")
+        
+        choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
         if choice == '2':
             package = input("Enter Package ID : ").split(',')
+        if choice == '3':
+            if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
+                backup_type = "full"
+                kv_node = input("Enter KV Store Backup node :")
+            else:
+                package = input("Enter Package ID for app-specific KVStore Backup : ").split(',')
+                kv_node = input("Enter KV Store Backup node : ")
+                backup_type = "app"
 
+    JIRA_CMT_STR+=JIRA_KV_STR
     print(JIRA_CMT_STR)
     print(JIRA_SCK_STR)
     if query_yes_no("\n\nDo you want to add JIRA comment?", "yes"):     
@@ -667,10 +347,10 @@ try:
         options = {'server': JIRA_SERVER}
         jira = JIRA(options=options, basic_auth=(EMAIL_ID, JIRA_TOKEN))
         issue = jira.issue(JIRA_ID)
-        remove_lable=['auto_precheck_general','auto_precheck_review','auto_precheck_failed','auto_precheck_complete','auto_precheck_in_progress']
-        issue.fields.labels=[issue.fields.labels[i] for i in range(len(issue.fields.labels)) if issue.fields.labels[i] not in remove_lable]
-        issue.fields.labels.append(u'auto_precheck_general')
-        issue.update(fields={"labels": issue.fields.labels})
+        # remove_lable=['auto_precheck_general','auto_precheck_review','auto_precheck_failed','auto_precheck_complete','auto_precheck_in_progress']
+        # issue.fields.labels=[issue.fields.labels[i] for i in range(len(issue.fields.labels)) if issue.fields.labels[i] not in remove_lable]
+        # issue.fields.labels.append(u'auto_precheck_general')
+        # issue.update(fields={"labels": issue.fields.labels})
         jira.add_comment(issue, JIRA_CMT_STR)
         jira.add_comment(issue, JIRA_SCK_STR)
         print("Comment added successfully: " +
