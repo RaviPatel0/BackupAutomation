@@ -270,11 +270,11 @@ try:
                                 JIRA_CMT_STR+="*on "+x+"*\n"
                                 JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
                                 continue
-                            JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,x)
+                            JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,x,j)
 
                         # App Specific Backup
                         if choice == '2':
-                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package)
+                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j)
                             
                         # KV Store Backup
                         if choice == '3' and check_kv_status == "ready" and x == kv_captain:
@@ -303,13 +303,13 @@ try:
                                 continue
 
                         # Taking EBTool Backup
-                        JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,node_fqdn)
+                        JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,node_fqdn,j)
                     if choice =='2':
                         # Taking App Specific Backup
                         if j.startswith('c0m1'):
-                            JIRA_CMT_STR=cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package)
+                            JIRA_CMT_STR=cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j)
                         else:
-                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package)
+                            JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j)
       
                     # KV Store Backup
                     if choice == '3' and check_kv_status == "ready" and (instance_dict[kv_node]).split(".")[0] == node_fqdn:

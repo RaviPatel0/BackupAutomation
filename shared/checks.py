@@ -110,9 +110,9 @@ def check_disk_space(x):
     return disk_space
 
 
-def eb_tool_backup(JIRA_CMT_STR,x):
+def eb_tool_backup(JIRA_CMT_STR,x,j):
     print("Taking EBTool Backup ... ")
-    JIRA_CMT_STR+="*on "+x+"*\n"
+    JIRA_CMT_STR+="*on "+x+" ("+j+")*\n"
     JIRA_CMT_STR+="{code:java}\n"
     cmd =  "sft ssh " + x + " --command 'sudo su  - splunk -c \"PYTHONPATH="" LD_LIBRARY_PATH="" >/dev/null; local-backup-splunketc backup;\"'"
     op= os.popen(cmd).read()
@@ -143,9 +143,9 @@ def eb_tool_backup(JIRA_CMT_STR,x):
 
 
 
-def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package):
+def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
     print("Taking App Specific Backup ... ")
-    JIRA_CMT_STR+="*on "+x+"*\n"
+    JIRA_CMT_STR+="*on "+x+" ("+j+")*\n"
     for k in package:
         JIRA_CMT_STR+="{code:java}\n"
         cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
@@ -185,9 +185,9 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package):
         
     return JIRA_CMT_STR
 
-def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package):
+def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
     print("Taking App Specific Backup ... ")
-    JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
+    JIRA_CMT_STR+="*on "+node_fqdn+" ("+j+")*\n"
     for k in package:
         JIRA_CMT_STR+="{code:java}\n"
         cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
