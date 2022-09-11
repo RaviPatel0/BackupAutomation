@@ -14,8 +14,7 @@
 
 **3. Give execution permission to test.sh and test1.sh files**
 
-    chmod +x test.sh
-    chmod +x test1.sh
+    chmod +x *.sh
     
 **4. Run python script**
 
