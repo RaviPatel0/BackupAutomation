@@ -238,6 +238,8 @@ try:
     sanity_pointer_shc = 0
     sanity_pointer_search = 0
     sanity_pointer_kv = 0
+    check_kv_status = "failed"
+    kv_captain = "test"
     
     while(choice!='4'):
         for i in instance_dict.keys():
@@ -252,16 +254,17 @@ try:
                             JIRA_SCK_STR=shcluster_status(JIRA_SCK_STR,x,PASS)                        
                             flag = 1
                             sanity_pointer_shc = 1
+                            
+                        # Indexer Searchability
+                        if sanity_pointer_search == 0:
+                            JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,x,PASS,j)
+                            
 
                         # KV Store Status
                         if choice == '3' and kv_node == "shc1" and sanity_pointer_kv == 0:
                             JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,x,PASS,"yes")
                             JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,kv_captain,PASS,"yes")
                             sanity_pointer_kv = 1
-                        
-                        # Indexer Searchability
-                        if sanity_pointer_search == 0:
-                            JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,x,PASS,j)
 
                         # EB Tool Backup
                         if choice == '1':
@@ -277,7 +280,7 @@ try:
                             JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j)
                             
                         # KV Store Backup
-                        if choice == '3' and check_kv_status == "ready" and x == kv_captain:
+                        if choice == '3' and check_kv_status == "ready" and x == kv_captain and kv_captain!="error":
                             JIRA_KV_STR=kvstore_backup(JIRA_KV_STR,kv_captain,PASS,JIRA_ID,package,backup_type)  
                             print("Please Check KV Strore status before start Maintenance Window")
 
@@ -290,7 +293,7 @@ try:
                     # KV Store Status
                     if choice == '3' and kv_node != "shc1" and sanity_pointer_kv == 0:
                         node_id = (instance_dict[kv_node]).split(".")[0]
-                        JIRA_SCK_STR,check_kv_status = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
+                        JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
                         sanity_pointer_kv = 1
                         
                     if choice == '1':
@@ -312,10 +315,9 @@ try:
                             JIRA_CMT_STR=sh_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j)
       
                     # KV Store Backup
-                    if choice == '3' and check_kv_status == "ready" and (instance_dict[kv_node]).split(".")[0] == node_fqdn:
+                    if choice == '3' and check_kv_status == "ready" and (instance_dict[kv_node]).split(".")[0] == node_fqdn and kv_captain!="error":
                         JIRA_KV_STR=kvstore_backup(JIRA_KV_STR,node_fqdn,PASS,JIRA_ID,package,backup_type)  
                         print("Please Check KV Strore status before start Maintenance Window")
-                      
         sanity_pointer_search = 1
         
         choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")

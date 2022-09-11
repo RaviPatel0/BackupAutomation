@@ -76,7 +76,10 @@ def kvstore_status(JIRA_SCK_STR,x,PASS,is_shc):
         return JIRA_SCK_STR,check_kv_status
     else:
         JIRA_SCK_STR+= "\n*{color:#d04437}KVStore Status is failed. Please take backup after fix KVStore Status*{color}*\n"
-        print("KVStore Status is failed. Please take backup after fix KVStore Status")   
+        print("KVStore Status is failed. Please take backup after fix KVStore Status")
+        check_kv_status="failed"
+        kv_captain="error"
+        return JIRA_SCK_STR,check_kv_status,kv_captain
     
     return JIRA_SCK_STR,check_kv_status,kv_captain
 
@@ -106,7 +109,7 @@ def check_disk_space(x):
     cmd =  "sft ssh "+ x + " --command 'sudo su  - splunk -c \"df -h | grep \'/opt/splunk\' \"'"
     op= os.popen(cmd).read()
     disk_space=(op.split()[-2]).split("%")[0]
-    
+
     return disk_space
 
 
@@ -246,7 +249,7 @@ def kvstore_backup(JIRA_KV_STR,node,PASS,JIRA_ID,package,backup_type):
         JIRA_KV_STR+="{code:java}\n"
         for i in package:
             package=str(package).strip()
-            subprocess.call(['sh', './kv_back_app.sh',node,PASS,i])
+            subprocess.call(['sh', './kv_back_app.sh',node,PASS,JIRA_ID,i])
             print("Backup is in progress wait for 60 secounds ...")
             time.sleep(60)    
             move_next = False            
