@@ -4,8 +4,6 @@ import re
 import sys
 import time
 
-
-
 def query_yes_no(question, default="no"):
     valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
     if default is None:
