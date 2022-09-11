@@ -249,7 +249,7 @@ def kvstore_backup(JIRA_KV_STR,node,PASS,JIRA_ID,package,backup_type):
         JIRA_KV_STR+="{code:java}\n"
         for i in package:
             package=str(package).strip()
-            subprocess.call(['sh', './kv_back_app.sh',node,PASS,JIRA_ID,i])
+            subprocess.call(['sh', './kv_back_app.sh',node,PASS,i])
             print("Backup is in progress wait for 60 secounds ...")
             time.sleep(60)    
             move_next = False            
