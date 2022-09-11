@@ -45,7 +45,7 @@ HOME_PATH = os.environ['HOME']
 choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
 
 if choice == '2':
-            package = input("Enter Package ID : ").split(',')
+            package = input("Enter Package Name : ").split(',')
 if choice == '3':
     if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
         kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) :")
@@ -293,7 +293,6 @@ try:
                         JIRA_SCK_STR,check_kv_status = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
                         sanity_pointer_kv = 1
                         
-                        
                     if choice == '1':
                         # Checking Disk Space 
                         if i != "indexer":
@@ -321,7 +320,7 @@ try:
         
         choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
         if choice == '2':
-            package = input("Enter Package ID : ").split(',')
+            package = input("Enter Package Name : ").split(',')
         if choice == '3':
             if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
                 backup_type = "full"
