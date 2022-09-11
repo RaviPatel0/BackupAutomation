@@ -48,11 +48,11 @@ if choice == '2':
             package = input("Enter Package ID : ").split(',')
 if choice == '3':
     if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
-        kv_node = input("Enter KV Store Backup node :")
+        kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) :")
         backup_type = "full"
     else:
         package = input("Enter Package ID for app-specific KVStore Backup : ").split(',')
-        kv_node = input("Enter KV Store Backup node : ")
+        kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) : ")
         backup_type = "app"
 
 print("Your username is " + AD_USER)
@@ -325,10 +325,10 @@ try:
         if choice == '3':
             if query_yes_no("\n\nDo you want to take full KV Store Backup ?", "yes"):
                 backup_type = "full"
-                kv_node = input("Enter KV Store Backup node :")
+                kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) :")
             else:
                 package = input("Enter Package ID for app-specific KVStore Backup : ").split(',')
-                kv_node = input("Enter KV Store Backup node : ")
+                kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) : ")
                 backup_type = "app"
 
     JIRA_CMT_STR+=JIRA_KV_STR
