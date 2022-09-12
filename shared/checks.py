@@ -148,8 +148,8 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
     print("Taking App Specific Backup ... ")
     JIRA_CMT_STR+="*on "+x+" ("+j+")*\n"
     op=""
+    JIRA_CMT_STR+="{code:java}\n"
     for k in package:
-        JIRA_CMT_STR+="{code:java}\n"
         cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
@@ -196,8 +196,9 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
 def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
     print("Taking App Specific Backup ... ")
     JIRA_CMT_STR+="*on "+node_fqdn+" ("+j+")*\n"
-    for k in package:
-        JIRA_CMT_STR+="{code:java}\n"
+    JIRA_CMT_STR+="{code:java}\n"
+    op=""
+    for k in package:   
         cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
