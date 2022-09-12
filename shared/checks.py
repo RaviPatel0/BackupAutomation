@@ -153,33 +153,39 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
         cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-        
+
         with open('tempf.txt', 'w') as f:
             print(op, file=f)
-
         with open("tempf.txt","r") as file_one:
-
-            patrn = "Tab-completion"
-            patrn4 = "closed"
             patrn1="No such file or directory"
-            patrn3="mkdir: cannot create directory"
-            patrn5="UTC"
             for line in file_one:
-
-                if re.search(patrn, line):
-                    pass
-                elif re.search(patrn3, line):
-                    pass
-                elif re.search(patrn4, line):
-                    pass
-                elif re.search(patrn5, line):
-                    DATE = line
-                elif re.search(patrn1, line):
-                    JIRA_CMT_STR+="\n----------------------->    Package not found - ("+str(k)+")    <-----------------------\n\n"
-                    break
-                else:
-                    JIRA_CMT_STR+=line
-    JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+                if re.search(patrn1, line):
+                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n"
+                    break             
+    with open('tempf.txt', 'w') as f:
+        print(op, file=f)
+        
+    JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"   
+    with open("tempf.txt","r") as file_one:
+        patrn = "Tab-completion"
+        patrn4 = "closed"
+        patrn1="No such file or directory"
+        patrn3="mkdir: cannot create directory"
+        patrn5="UTC"
+        for line in file_one:
+            if re.search(patrn, line):
+                pass
+            elif re.search(patrn3, line):
+                pass
+            elif re.search(patrn4, line):
+                pass
+            elif re.search(patrn5, line):
+                DATE = line
+            elif re.search(patrn1, line):
+                pass
+            else:
+                JIRA_CMT_STR+=line
+    
     JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ date\n"
     JIRA_CMT_STR+=DATE
     JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ \n"
@@ -195,35 +201,40 @@ def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
         cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-        
 
         with open('tempf.txt', 'w') as f:
             print(op, file=f)
 
         with open("tempf.txt","r") as file_one:
-
-            patrn = "Tab-completion"
-            patrn4 = "closed"
             patrn1="No such file or directory"
-            patrn3="mkdir: cannot create directory"
-            patrn5="UTC"
             for line in file_one:
-
-                if re.search(patrn, line):
-                    pass
-                elif re.search(patrn3, line):
-                    pass
-                elif re.search(patrn4, line):
-                    pass
-                elif re.search(patrn5, line):
-                    DATE = line
-                elif re.search(patrn1, line):
-                    JIRA_CMT_STR+="\n----------------------->    Package not found - ("+str(k)+")    <-----------------------\n\n"
-                    break
-                else:
-                    JIRA_CMT_STR+=line
-                    
+                if re.search(patrn1, line):
+                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n"
+                    break             
+    with open('tempf.txt', 'w') as f:
+        print(op, file=f)
+        
     JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+    with open("tempf.txt","r") as file_one:
+        patrn = "Tab-completion"
+        patrn4 = "closed"
+        patrn1="No such file or directory"
+        patrn3="mkdir: cannot create directory"
+        patrn5="UTC"
+        for line in file_one:
+            if re.search(patrn, line):
+                pass
+            elif re.search(patrn3, line):
+                pass
+            elif re.search(patrn4, line):
+                pass
+            elif re.search(patrn5, line):
+                DATE = line
+            elif re.search(patrn1, line):
+                pass
+            else:
+                JIRA_CMT_STR+=line
+                    
     JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ date\n"
     JIRA_CMT_STR+=DATE
     JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ \n"
