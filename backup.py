@@ -42,7 +42,7 @@ AD_USER = getuser()
 SHELL_PATH = os.environ['PATH']
 HOME_PATH = os.environ['HOME']
 
-choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
+choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
 
 if choice == '2':
             package = input("Enter Package Name : ").split(',')
@@ -255,17 +255,16 @@ try:
                             flag = 1
                             sanity_pointer_shc = 1
                             
-                        # Indexer Searchability
-                        if sanity_pointer_search == 0:
-                            JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,x,PASS,j)
-                            
-
                         # KV Store Status
                         if choice == '3' and kv_node == "shc1" and sanity_pointer_kv == 0:
                             JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,x,PASS,"yes")
                             JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,kv_captain,PASS,"yes")
                             sanity_pointer_kv = 1
-
+                            
+                        # Indexer Searchability
+                        if sanity_pointer_search == 0:
+                            JIRA_SCK_STR=indexer_searchability(JIRA_SCK_STR,x,PASS,j)
+                            
                         # EB Tool Backup
                         if choice == '1':
                             disk_space=check_disk_space(x)
@@ -320,7 +319,7 @@ try:
                         print("Please Check KV Strore status before start Maintenance Window")
         sanity_pointer_search = 1
         
-        choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific\n3. KV Store\n4. Exit \n")
+        choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
         if choice == '2':
             package = input("Enter Package Name : ").split(',')
         if choice == '3':
