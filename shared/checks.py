@@ -147,13 +147,13 @@ def eb_tool_backup(JIRA_CMT_STR,x,j):
 def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
     print("Taking App Specific Backup ... ")
     JIRA_CMT_STR+="*on "+x+" ("+j+")*\n"
+    op=""
     for k in package:
         JIRA_CMT_STR+="{code:java}\n"
         cmd = "sft ssh " + x + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-        JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
-
+        
         with open('tempf.txt', 'w') as f:
             print(op, file=f)
 
@@ -179,10 +179,11 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
                     break
                 else:
                     JIRA_CMT_STR+=line
-        JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ date\n"
-        JIRA_CMT_STR+=DATE
-        JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ \n"
-        JIRA_CMT_STR+="{code}\n"
+    JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+    JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ date\n"
+    JIRA_CMT_STR+=DATE
+    JIRA_CMT_STR+="splunk@"+x+":~/etc/apps$ \n"
+    JIRA_CMT_STR+="{code}\n"
         
     return JIRA_CMT_STR
 
@@ -194,7 +195,7 @@ def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
         cmd = "sft ssh " + node_fqdn + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+"/;cd;cd /opt/splunk/etc/master-apps/;cp -pR "+str(k).strip()+"/ /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
         op= os.popen(cmd).read()
         JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  cp -pR "+str(k)+"/ /opt/splunk/tmp/"+JIRA_ID+"/\n"
-        JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+        
 
         with open('tempf.txt', 'w') as f:
             print(op, file=f)
@@ -221,10 +222,12 @@ def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
                     break
                 else:
                     JIRA_CMT_STR+=line
-        JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ date\n"
-        JIRA_CMT_STR+=DATE
-        JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ \n"
-        JIRA_CMT_STR+="{code}\n"
+                    
+    JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
+    JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ date\n"
+    JIRA_CMT_STR+=DATE
+    JIRA_CMT_STR+="splunk@"+node_fqdn+":~/etc/master-apps$ \n"
+    JIRA_CMT_STR+="{code}\n"
 
     return JIRA_CMT_STR
    
