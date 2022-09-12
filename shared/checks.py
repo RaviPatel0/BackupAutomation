@@ -289,20 +289,26 @@ def kv_jira_commnet(JIRA_KV_STR,node,JIRA_ID,package_name):
         op= os.popen(cmd).read()
         JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$  cp -pR backup-"+package_name+".tar.gz /opt/splunk/tmp/"+JIRA_ID+"/\n"
         JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"
-        print("full",JIRA_KV_STR)
     else:
         for i in range(len(package_name)):
-            cmd = "sft ssh " + node + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/var/lib/splunk/kvstorebackup/;cp -pR backup-"+str(package_name[i])+".tar.gz /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"  
-            print(cmd)
+            cmd = "sft ssh " + node + " --command 'sudo su  - splunk -c \"date;cd /opt/splunk/;mkdir /opt/splunk/tmp/"+JIRA_ID+";cd;cd /opt/splunk/var/lib/splunk/kvstorebackup/;cp -pR backup-"+str(package_name[i])+".tar.gz /opt/splunk/tmp/"+JIRA_ID+"/;ls -la /opt/splunk/tmp/"+JIRA_ID+"/\"'"
             op= os.popen(cmd).read()
             JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$  cp -pR backup-"+str(package_name[i])+".tar.gz /opt/splunk/tmp/"+JIRA_ID+"/\n"
-            print("per app",JIRA_KV_STR)
-        JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n"    
-        print("after all app",JIRA_KV_STR)       
-           
+
+            with open('tempf.txt', 'w') as f:
+                print(op, file=f)
+
+            with open("tempf.txt","r") as file_one:
+                patrn1="No such file or directory"
+                for line in file_one:
+                    if re.search(patrn1, line):
+                        JIRA_KV_STR+="\n------>    Package not found - ("+str(package_name[i])+")    <------\n\n"
+                        break     
+                    
     with open('tempf.txt', 'w') as f:
         print(op, file=f)
-
+    JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$  ls -la /opt/splunk/tmp/"+JIRA_ID+"/\n" 
+    
     with open("tempf.txt","r") as file_one:
 
         patrn = "Tab-completion"
@@ -320,8 +326,7 @@ def kv_jira_commnet(JIRA_KV_STR,node,JIRA_ID,package_name):
             elif re.search(patrn5, line):
                 DATE = line
             elif re.search(patrn1, line):
-                JIRA_KV_STR+="\n----------------------->    Backup not found    <-----------------------\n\n"
-                break
+                pass
             else:
                 JIRA_KV_STR+=line
     JIRA_KV_STR+="splunk@"+node+":~/var/lib/splunk/kvstorebackup$ date\n"
