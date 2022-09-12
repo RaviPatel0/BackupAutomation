@@ -160,7 +160,7 @@ def sh_app_specfic_backup(JIRA_CMT_STR,x,JIRA_ID,package,j):
             patrn1="No such file or directory"
             for line in file_one:
                 if re.search(patrn1, line):
-                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n"
+                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n\n"
                     break             
     with open('tempf.txt', 'w') as f:
         print(op, file=f)
@@ -210,7 +210,7 @@ def cm_app_specfic_backup(JIRA_CMT_STR,node_fqdn,JIRA_ID,package,j):
             patrn1="No such file or directory"
             for line in file_one:
                 if re.search(patrn1, line):
-                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n"
+                    JIRA_CMT_STR+="\n------>    Package not found - ("+str(k)+")    <------\n\n"
                     break             
     with open('tempf.txt', 'w') as f:
         print(op, file=f)
