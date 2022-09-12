@@ -248,7 +248,7 @@ def kvstore_backup(JIRA_KV_STR,node,PASS,JIRA_ID,package,backup_type):
     back = package
     if backup_type == "full":
         subprocess.call(['sh', './kv_back.sh',node,PASS,JIRA_ID])
-        JIRA_KV_STR+="*h2. KVStore Backup*\n"
+        JIRA_KV_STR+="h2. *KVStore Backup*\n"
         JIRA_KV_STR+="*on "+node+"*\n"
         JIRA_KV_STR+="{code:java}\n"
         JIRA_KV_STR+="splunk@"+node+":~$ splunk backup kvstore -archiveName backup-"+JIRA_ID+"\n"
@@ -257,7 +257,7 @@ def kvstore_backup(JIRA_KV_STR,node,PASS,JIRA_ID,package,backup_type):
         JIRA_KV_STR=kv_jira_commnet(JIRA_KV_STR,node,JIRA_ID,JIRA_ID)
 
     if backup_type == "app":
-        JIRA_KV_STR+="*h2. KVStore Backup*\n"
+        JIRA_KV_STR+="h2. *KVStore Backup*\n"
         JIRA_KV_STR+="*on "+node+"*\n"
         JIRA_KV_STR+="{code:java}\n"
         for i in package:
