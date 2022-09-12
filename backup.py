@@ -292,7 +292,7 @@ try:
                     # KV Store Status
                     if choice == '3' and kv_node != "shc1" and sanity_pointer_kv == 0:
                         node_id = (instance_dict[kv_node]).split(".")[0]
-                        JIRA_SCK_STR,check_kv_status,kv_captain = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
+                        JIRA_SCK_STR,check_kv_status = kvstore_status(JIRA_SCK_STR,node_id,PASS,"no")
                         sanity_pointer_kv = 1
                         
                     if choice == '1':
