@@ -303,9 +303,9 @@ try:
                                 JIRA_CMT_STR+="*on "+node_fqdn+"*\n"
                                 JIRA_CMT_STR+="*{color:red}Enough Disk space is not available on this node. Please take app-specific backup{color}*\n"
                                 continue
-
-                        # Taking EBTool Backup
-                        JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,node_fqdn,j)
+                        if i != "indexer":
+                            # Taking EBTool Backup
+                            JIRA_CMT_STR=eb_tool_backup(JIRA_CMT_STR,node_fqdn,j)
                     if choice =='2':
                         # Taking App Specific Backup
                         if j.startswith('c0m1'):
