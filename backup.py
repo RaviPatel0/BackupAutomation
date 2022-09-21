@@ -43,6 +43,9 @@ SHELL_PATH = os.environ['PATH']
 HOME_PATH = os.environ['HOME']
 
 choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
+while choice not in [1,2,3,4]:
+    print("Please choose valid options ....")
+    choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
 
 if choice == '2':
             package = input("Enter Package Name : ").split(',')
@@ -55,6 +58,7 @@ if choice == '3':
         kv_node = input("Enter KV Store Backup node (shc1,sh1,sh2, etc ...) : ")
         backup_type = "app"
 
+    
 print("Your username is " + AD_USER)
 
 
@@ -320,6 +324,10 @@ try:
         sanity_pointer_search = 1
         
         choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
+        while choice not in [1,2,3,4]:
+            print("Please choose valid options ....")
+            choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
+    
         if choice == '2':
             package = input("Enter Package Name : ").split(',')
         if choice == '3':
