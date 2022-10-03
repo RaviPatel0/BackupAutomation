@@ -43,10 +43,14 @@ SHELL_PATH = os.environ['PATH']
 HOME_PATH = os.environ['HOME']
 
 choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
-while choice not in [1,2,3,4]:
-    print("Please choose valid options ....")
-    choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
-
+try:
+    while int(choice) not in [1,2,3,4]:
+        print("Please choose valid options ....")
+        choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
+except ValueError as ve:
+     print("Please enter valid integer number")
+     exit()
+     
 if choice == '2':
             package = input("Enter Package Name : ").split(',')
 if choice == '3':
@@ -324,10 +328,16 @@ try:
         sanity_pointer_search = 1
         
         choice = input("\n\nWant to continue with backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
-        while choice not in [1,2,3,4]:
-            print("Please choose valid options ....")
-            choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
-    
+        try:    
+            while int(choice) not in [1,2,3,4]:
+                print("Please choose valid options ....")
+                choice = input("Take backup:\n1. Using EBTOOL\n2. App Specific Backup\n3. KV Store\n4. Exit \n")
+        except ValueError as ve:
+            print("Make a jira comment manually for previous run")
+            print("Please enter valid integer number")
+            print(JIRA_CMT_STR)
+            print(JIRA_SCK_STR)
+            exit()
         if choice == '2':
             package = input("Enter Package Name : ").split(',')
         if choice == '3':
